@@ -1,4 +1,4 @@
-syntax = "proto2";
+syntax = "proto3";
 
 package demo;
 
@@ -7,25 +7,25 @@ option java_outer_classname = "CustomerProtos";
 
 
 message Customer {
-    required int32 id = 1;
-    required string firstName = 2;
-    required string lastName = 3;
+    int32 id = 1;
+    string firstName = 2;
+    string lastName = 3;
 
     enum EmailType {
-        PRIVATE = 1;
-        PROFESSIONAL = 2;
+        PRIVATE = 0;
+        PROFESSIONAL = 1;
     }
 
     message EmailAddress {
-        required string email = 1;
-        optional EmailType type = 2 [default = PROFESSIONAL];
+        string email = 1;
+        EmailType type = 2;
     }
 
     repeated EmailAddress email = 5;
 }
 
 message Organization {
-    required string name = 1;
+    string name = 1;
     repeated Customer customer = 2;
 }
 

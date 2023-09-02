@@ -7,6 +7,11 @@ The compilation of the protocol buffers specifications will be performed
 during the maven build.
 
 
+## Implementation notes
+
+- ``ProtobufHttpMessageConverter`` encodes/decodes Protocol Buffer objects automatically
+  - if the client specifies Accept: application/x-protobuf, for example, then our REST service will send back the Protocol Buffer-encoded response
+
 ## Build
 To build the example just execute:
 ```
