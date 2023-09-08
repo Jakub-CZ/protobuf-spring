@@ -1,7 +1,13 @@
 package demo;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 
+import javax.websocket.DeploymentException;
+
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,13 +15,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.web.socket.client.WebSocketClient;
-import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class AppTests {
 
     @Autowired
@@ -32,10 +36,11 @@ public class AppTests {
     }
 
     @Test
-    public void websocketLoaded() {
-        WebSocketClient client = new StandardWebSocketClient();
-        client.doHandshake(???)
-        ResponseEntity<ByteBuffer> customerResponse = restTemplate.getForEntity("/websocket/legacy", ByteBuffer.class);
-        System.out.println("customer retrieved: " + customerResponse.toString());
+    public void websocketLoaded() throws DeploymentException, URISyntaxException, IOException {
+        WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777/websocket/legacy");
+        client.setMessageTrap(1);
+        client.sendBinary(ByteBuffer.wrap(new byte[]{42, 66, 127}));
+        ArrayList<ByteBuffer> response = client.getMessages();
+        System.out.println("binary message received: " + Hex.encodeHexString(response.get(0)));
     }
 }

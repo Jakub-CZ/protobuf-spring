@@ -8,9 +8,10 @@ import javax.websocket.OnMessage;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 
-import org.springframework.web.socket.server.standard.SpringConfigurator;
+import org.springframework.stereotype.Component;
 
-@ServerEndpoint(value = "/websocket/legacy", configurator = SpringConfigurator.class)
+@ServerEndpoint(value = "/websocket/legacy", configurator = CustomSpringConfigurator.class)
+@Component
 public class LegacyWebSocketMessageService {
     private final Logger log = Logger.getLogger(getClass().getName());
 
