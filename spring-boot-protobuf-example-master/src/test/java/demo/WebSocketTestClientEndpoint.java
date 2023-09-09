@@ -13,7 +13,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.glassfish.tyrus.client.ClientManager;
 import org.junit.jupiter.api.Assertions;
 
-@ClientEndpoint
+@ClientEndpoint(decoders = CustomerDecoder.class, encoders = CustomerEncoder.class)
 public class WebSocketTestClientEndpoint {
     private static final boolean DEBUG = false;
 
@@ -99,6 +99,10 @@ public class WebSocketTestClientEndpoint {
 
     public void sendBinary(ByteBuffer byteBuffer) throws IOException {
         session.getBasicRemote().sendBinary(byteBuffer);
+    }
+
+    public void sendObject(Object object) throws IOException, EncodeException {
+        session.getBasicRemote().sendObject(object);
     }
 
     public void setMessageTrap() {
