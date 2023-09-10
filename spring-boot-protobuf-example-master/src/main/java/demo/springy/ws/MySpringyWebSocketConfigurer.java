@@ -13,10 +13,16 @@ public class MySpringyWebSocketConfigurer implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry.addHandler(sorterWebSocketHandler(), "/springws/sortbytes");
+        registry.addHandler(customerWebSocketHandler(), "/springws/customers");
     }
 
     @Bean
     public WebSocketHandler sorterWebSocketHandler() {
         return new SorterWebSocketHandler();
+    }
+
+    @Bean
+    public WebSocketHandler customerWebSocketHandler() {
+        return new CustomerWebSocketHandler();
     }
 }

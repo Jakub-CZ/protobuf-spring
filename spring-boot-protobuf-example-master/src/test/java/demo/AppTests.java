@@ -3,6 +3,8 @@ package demo;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
@@ -46,9 +48,10 @@ public class AppTests {
         assertThat(receivedBuffer).isEqualTo(sentBuffer);
     }
 
-    @Test
-    public void websocketWithProtobuf() throws DeploymentException, URISyntaxException, IOException, EncodeException {
-        WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777/websocket/customers");
+    @ParameterizedTest
+    @ValueSource(strings = {"/websocket/customers", "/springws/customers"})
+    public void websocketWithProtobuf(String path) throws DeploymentException, URISyntaxException, IOException, EncodeException {
+        WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777" + path);
         client.setMessageTrap(1);
         client.sendObject(CustomerProtos.Customer.newBuilder()
                 .setFirstName("Jakub")
