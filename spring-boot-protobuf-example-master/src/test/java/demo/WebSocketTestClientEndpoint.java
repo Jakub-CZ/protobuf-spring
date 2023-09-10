@@ -1,17 +1,18 @@
 package demo;
 
+import demo.codecs.CustomerDecoder;
+import demo.codecs.CustomerEncoder;
+import org.apache.commons.codec.binary.Hex;
+import org.glassfish.tyrus.client.ClientManager;
+import org.junit.jupiter.api.Assertions;
+
+import javax.websocket.*;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
-
-import javax.websocket.*;
-
-import org.apache.commons.codec.binary.Hex;
-import org.glassfish.tyrus.client.ClientManager;
-import org.junit.jupiter.api.Assertions;
 
 @ClientEndpoint(decoders = CustomerDecoder.class, encoders = CustomerEncoder.class)
 public class WebSocketTestClientEndpoint {

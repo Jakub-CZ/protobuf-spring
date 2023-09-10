@@ -1,13 +1,5 @@
 package demo;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-
-import javax.websocket.DeploymentException;
-import javax.websocket.EncodeException;
-
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,12 +9,18 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import javax.websocket.DeploymentException;
+import javax.websocket.EncodeException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 public class AppTests {
-
     @Autowired
     private TestRestTemplate restTemplate;
 

@@ -1,6 +1,8 @@
-package demo;
+package demo.springy;
 
 
+import demo.CustomerProtos;
+import demo.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;

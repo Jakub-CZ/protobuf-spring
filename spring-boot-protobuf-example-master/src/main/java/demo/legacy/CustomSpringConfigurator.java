@@ -1,4 +1,4 @@
-package demo;
+package demo.legacy;
 
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;

@@ -1,4 +1,6 @@
-package demo;
+package demo.codecs;
+
+import demo.CustomerProtos;
 
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;

@@ -1,7 +1,7 @@
 package demo;
 
 
-interface CustomerRepository {
+public interface CustomerRepository {
 
   CustomerProtos.Customer findById(int id);
 

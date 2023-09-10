@@ -1,4 +1,4 @@
-package demo;
+package demo.legacy;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;

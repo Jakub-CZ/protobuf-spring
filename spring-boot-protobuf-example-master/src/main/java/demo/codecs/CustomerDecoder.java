@@ -1,6 +1,7 @@
-package demo;
+package demo.codecs;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import demo.CustomerProtos;
 
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;

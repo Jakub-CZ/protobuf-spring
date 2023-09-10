@@ -1,5 +1,8 @@
-package demo;
+package demo.legacy;
 
+import demo.CustomerProtos;
+import demo.codecs.CustomerDecoder;
+import demo.codecs.CustomerEncoder;
 import org.springframework.stereotype.Component;
 
 import javax.websocket.EncodeException;
