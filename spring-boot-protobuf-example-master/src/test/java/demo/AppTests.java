@@ -64,4 +64,16 @@ public class AppTests {
         assertThat(customer.getFirstName()).isEqualTo("JAKUB");
         assertThat(customer.getLastName()).isEqualTo("LOUCKÝ");
     }
+
+    @Test
+    public void springyWebsocketSorter() throws DeploymentException, URISyntaxException, IOException {
+        WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777/springws/sortbytes");
+        client.setMessageTrap(1);
+        client.sendBinary(ByteBuffer.wrap(new byte[]{42, 0, -128}));
+        ArrayList<ByteBuffer> response = client.getMessages();
+        assertThat(response).size().isEqualTo(1);
+        final ByteBuffer receivedBuffer = response.get(0);
+        System.out.println("binary message received: " + Hex.encodeHexString(receivedBuffer.duplicate()));
+        assertThat(receivedBuffer).isEqualTo(ByteBuffer.wrap(new byte[]{-128, 0, 42}));
+    }
 }
