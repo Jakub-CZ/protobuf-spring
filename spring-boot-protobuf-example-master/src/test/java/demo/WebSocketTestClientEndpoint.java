@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Assertions;
 
 import javax.websocket.*;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
@@ -104,6 +105,10 @@ public class WebSocketTestClientEndpoint {
 
     public void sendObject(Object object) throws IOException, EncodeException {
         session.getBasicRemote().sendObject(object);
+    }
+
+    public OutputStream getSendStream() throws IOException {
+        return session.getBasicRemote().getSendStream();
     }
 
     public void setMessageTrap() {

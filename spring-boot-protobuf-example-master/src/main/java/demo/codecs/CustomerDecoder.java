@@ -1,25 +1,23 @@
 package demo.codecs;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import demo.CustomerProtos;
 
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
-import java.nio.ByteBuffer;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
-public class CustomerDecoder implements Decoder.Binary<CustomerProtos.Customer> {
+public class CustomerDecoder implements Decoder.BinaryStream<List<CustomerProtos.Customer>> {
     @Override
-    public CustomerProtos.Customer decode(ByteBuffer bytes) {
-        try {
-            return CustomerProtos.Customer.parseFrom(bytes);
-        } catch (InvalidProtocolBufferException e) {
-            throw new RuntimeException(e);
+    public List<CustomerProtos.Customer> decode(InputStream is) throws IOException {
+        List<CustomerProtos.Customer> customers = new ArrayList<>();
+        CustomerProtos.Customer customer;
+        while ((customer = CustomerProtos.Customer.parseDelimitedFrom(is)) != null) {
+            customers.add(customer);
         }
-    }
-
-    @Override
-    public boolean willDecode(ByteBuffer bytes) {
-        return (bytes != null);
+        return customers;
     }
 
     @Override

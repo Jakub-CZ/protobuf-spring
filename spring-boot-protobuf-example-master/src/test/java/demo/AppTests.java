@@ -12,8 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.websocket.DeploymentException;
-import javax.websocket.EncodeException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -50,22 +50,33 @@ public class AppTests {
 
     @ParameterizedTest
     @ValueSource(strings = {"/websocket/customers", "/springws/customers"})
-    public void websocketWithProtobuf(String path) throws DeploymentException, URISyntaxException, IOException, EncodeException {
+    public void websocketWithProtobuf(String path) throws DeploymentException, URISyntaxException, IOException {
         WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777" + path);
-        client.setMessageTrap(1);
-        client.sendObject(CustomerProtos.Customer.newBuilder()
+        client.setMessageTrap(2);
+        OutputStream sendStream = client.getSendStream();
+        CustomerProtos.Customer.newBuilder()
                 .setFirstName("Jakub")
                 .setLastName("Loucký")
                 .setId(42)
-                .build());
+                .build().writeDelimitedTo(sendStream);
+        CustomerProtos.Customer.newBuilder()
+                .setFirstName("John")
+                .setLastName("Deere")
+                .setId(69)
+                .build().writeDelimitedTo(sendStream);
+        sendStream.close();
         ArrayList<ByteBuffer> response = client.getMessages();
-        assertThat(response).size().isEqualTo(1);
+        assertThat(response).size().isEqualTo(2);
         final ByteBuffer customerAsBytes = response.get(0);
         System.out.println("customer received (in binary): " + Hex.encodeHexString(customerAsBytes.duplicate()));
         CustomerProtos.Customer customer = CustomerProtos.Customer.parseFrom(customerAsBytes);
         System.out.println("customer parsed: " + customer);
         assertThat(customer.getFirstName()).isEqualTo("JAKUB");
         assertThat(customer.getLastName()).isEqualTo("LOUCKÝ");
+
+        CustomerProtos.Customer customer2 = CustomerProtos.Customer.parseFrom(response.get(1));
+        assertThat(customer2.getLastName()).isEqualTo("DEERE");
+        System.out.println("another customer: " + customer2);
     }
 
     @Test
