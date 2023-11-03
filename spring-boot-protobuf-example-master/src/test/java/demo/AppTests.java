@@ -1,6 +1,7 @@
 package demo;
 
 import org.apache.commons.codec.binary.Hex;
+import org.apache.tomcat.websocket.AuthenticationException;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +56,7 @@ public class AppTests {
 
     @Test
     @Tag("TestAuth")
-    public void websocketWithAuth() throws DeploymentException, URISyntaxException, IOException {
+    public void websocketWithAuth() throws DeploymentException, URISyntaxException, IOException, AuthenticationException {
         final ByteBuffer sentBuffer;
         ArrayList<ByteBuffer> response;
         try (WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory(

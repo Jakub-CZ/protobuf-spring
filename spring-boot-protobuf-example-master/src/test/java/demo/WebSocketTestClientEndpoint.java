@@ -3,6 +3,9 @@ package demo;
 import demo.codecs.CustomerDecoder;
 import demo.codecs.CustomerEncoder;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.tomcat.websocket.AuthenticationException;
+import org.apache.tomcat.websocket.BasicAuthenticator;
+import org.apache.tomcat.websocket.Constants;
 import org.glassfish.tyrus.client.ClientManager;
 import org.junit.jupiter.api.Assertions;
 
@@ -15,11 +18,13 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.LinkedBlockingDeque;
 
 @ClientEndpoint(decoders = CustomerDecoder.class, encoders = CustomerEncoder.class)
-public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseable{
+public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseable {
     private static final boolean DEBUG = true;
 
     private Session session;
@@ -31,22 +36,12 @@ public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseab
         container.connectToServer(this, endpointURI);
     }
 
-    /**
-     * @param auth username and either password or other token, separated by colon.
-     */
-    public WebSocketTestClientEndpoint(URI endpointURI, String auth) throws IOException, DeploymentException {
+    public WebSocketTestClientEndpoint(URI endpointURI, String username, String password) throws IOException, DeploymentException, AuthenticationException {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
-        String base64Creds = new String(Base64.getEncoder().encode(auth.getBytes()));
-        container.connectToServer(this,
-                /*ClientEndpointConfig.Builder.create()
-                        .configurator(new ClientEndpointConfig.Configurator() {
-                            @Override
-                            public void beforeRequest(Map<String, List<String>> headers) {
-                                super.beforeRequest(headers);
-//                                headers.put("Authorization", Collections.singletonList("Basic " + base64Creds));
-                            }
-                        }).build(),*/ClientEndpointConfig.Builder.create().build(),
-                endpointURI);
+        ClientEndpointConfig clientEndpointConfig = ClientEndpointConfig.Builder.create().build();
+        clientEndpointConfig.getUserProperties().put(Constants.AUTHORIZATION_HEADER_NAME,
+                new BasicAuthenticator().getAuthorization(null, "", username, password, null));
+        container.connectToServer(this, clientEndpointConfig, endpointURI);
     }
 
     public static WebSocketTestClientEndpoint wsClientFactory(String uri) throws URISyntaxException, IOException, DeploymentException {
@@ -54,8 +49,8 @@ public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseab
     }
 
     public static WebSocketTestClientEndpoint wsClientFactory(String uri, String username, String password)
-            throws URISyntaxException, IOException, DeploymentException {
-        return new WebSocketTestClientEndpoint(new URI(uri), username + ":" + password);
+            throws URISyntaxException, IOException, DeploymentException, AuthenticationException {
+        return new WebSocketTestClientEndpoint(new URI(uri), username, password);
     }
 
     public ArrayList<ByteBuffer> getMessages() {
@@ -77,7 +72,6 @@ public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseab
     public void onOpen(Session userSession, EndpointConfig config) {
         //save session
         this.session = userSession;
-//        messageTrapBuffer = new ArrayList<>();
         if (DEBUG) {
             System.out.println("opening websocket "
                     + Integer.toHexString(System.identityHashCode(this)));
@@ -96,28 +90,12 @@ public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseab
 
     @OnMessage
     public synchronized void onMessage(ByteBuffer byteBuffer) {
-        //log this message
         if (DEBUG) {
             //binary message from the server is CVMO packet
             System.out.printf("[WS %s] onMessage received: %s%n", Integer.toHexString(System.identityHashCode(this)), Hex.encodeHexString(byteBuffer.array()));
         }
-//        synchronized (messageQueueLock) {
-            //check trap
-//            if (messageTrap > 0) {
-                System.out.printf("... now %d items in queue%n", messageTrapBuffer.size());
-                //decrement trap counter
-//                messageTrap--;
-                //set trap data
-                messageTrapBuffer.add(byteBuffer);
-                //notify if last
-//                if (messageTrap <= 0) {
-//                    notifyAll();
-//                }
-//            } else {
-//                throw new IllegalStateException(String.format("WHOOSH! A message just flew by without being processed:\n%s: %s",
-//                        Integer.toHexString(System.identityHashCode(this)), Hex.encodeHexString(byteBuffer.array())));
-//            }
-//        }
+        System.out.printf("... now %d items in queue%n", messageTrapBuffer.size());
+        messageTrapBuffer.add(byteBuffer);
     }
 
     public void close() throws IOException {
