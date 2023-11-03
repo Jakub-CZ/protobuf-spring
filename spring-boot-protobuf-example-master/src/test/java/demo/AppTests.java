@@ -1,6 +1,7 @@
 package demo;
 
 import org.apache.commons.codec.binary.Hex;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -36,16 +37,40 @@ public class AppTests {
     }
 
     @Test
+    @Tag("TestAuth")
     public void websocketLoaded() throws DeploymentException, URISyntaxException, IOException {
-        WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777/websocket/legacy");
-        client.setMessageTrap(1);
-        final ByteBuffer sentBuffer = ByteBuffer.wrap(new byte[]{42, 66, 127});
-        client.sendBinary(sentBuffer.duplicate());
-        ArrayList<ByteBuffer> response = client.getMessages();
-        assertThat(response).size().isEqualTo(1);
-        final ByteBuffer receivedBuffer = response.get(0);
-        System.out.println("binary message received: " + Hex.encodeHexString(receivedBuffer.duplicate()));
-        assertThat(receivedBuffer).isEqualTo(sentBuffer);
+        final ByteBuffer sentBuffer;
+        ArrayList<ByteBuffer> response;
+        try (WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory("ws://127.0.0.1:7777/websocket/legacy")) {
+            client.setMessageTrap(1);
+            sentBuffer = ByteBuffer.wrap(new byte[]{42, 66, 127});
+            client.sendBinary(sentBuffer.duplicate());
+            response = client.getMessages();
+            assertThat(response).size().isEqualTo(1);
+            final ByteBuffer receivedBuffer = response.get(0);
+            System.out.println("binary message received: " + Hex.encodeHexString(receivedBuffer.duplicate()));
+            assertThat(receivedBuffer).isEqualTo(sentBuffer);
+        }
+    }
+
+    @Test
+    @Tag("TestAuth")
+    public void websocketWithAuth() throws DeploymentException, URISyntaxException, IOException {
+        final ByteBuffer sentBuffer;
+        ArrayList<ByteBuffer> response;
+        try (WebSocketTestClientEndpoint client = WebSocketTestClientEndpoint.wsClientFactory(
+                "ws://127.0.0.1:7777/websocket/legacy",
+                "jakub", "pa55w0rd"
+        )) {
+            client.setMessageTrap(1);
+            sentBuffer = ByteBuffer.wrap(new byte[]{42, 66, 127});
+            client.sendBinary(sentBuffer.duplicate());
+            response = client.getMessages();
+            assertThat(response).size().isEqualTo(1);
+            final ByteBuffer receivedBuffer = response.get(0);
+            System.out.println("binary message received: " + Hex.encodeHexString(receivedBuffer.duplicate()));
+            assertThat(receivedBuffer).isEqualTo(sentBuffer);
+        }
     }
 
     @ParameterizedTest
@@ -77,6 +102,7 @@ public class AppTests {
         CustomerProtos.Customer customer2 = CustomerProtos.Customer.parseFrom(response.get(1));
         assertThat(customer2.getLastName()).isEqualTo("DEERE");
         System.out.println("another customer: " + customer2);
+        client.close();
     }
 
     @Test
@@ -89,5 +115,6 @@ public class AppTests {
         final ByteBuffer receivedBuffer = response.get(0);
         System.out.println("binary message received: " + Hex.encodeHexString(receivedBuffer.duplicate()));
         assertThat(receivedBuffer).isEqualTo(ByteBuffer.wrap(new byte[]{-128, 0, 42}));
+        client.close();
     }
 }

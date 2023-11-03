@@ -14,29 +14,53 @@ import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.LinkedBlockingDeque;
 
 @ClientEndpoint(decoders = CustomerDecoder.class, encoders = CustomerEncoder.class)
-public class WebSocketTestClientEndpoint {
-    private static final boolean DEBUG = false;
+public class WebSocketTestClientEndpoint extends Endpoint implements AutoCloseable{
+    private static final boolean DEBUG = true;
 
     private Session session;
     private int messageTrap = 0;
-    private ArrayList<ByteBuffer> messageTrapBuffer = null;
-
-    private ClientManager client;
+    private final BlockingDeque<ByteBuffer> messageTrapBuffer = new LinkedBlockingDeque<>(2);
 
     public WebSocketTestClientEndpoint(URI endpointURI) throws IOException, DeploymentException {
         WebSocketContainer container = ContainerProvider.getWebSocketContainer();
         container.connectToServer(this, endpointURI);
     }
 
+    /**
+     * @param auth username and either password or other token, separated by colon.
+     */
+    public WebSocketTestClientEndpoint(URI endpointURI, String auth) throws IOException, DeploymentException {
+        WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+        String base64Creds = new String(Base64.getEncoder().encode(auth.getBytes()));
+        container.connectToServer(this,
+                /*ClientEndpointConfig.Builder.create()
+                        .configurator(new ClientEndpointConfig.Configurator() {
+                            @Override
+                            public void beforeRequest(Map<String, List<String>> headers) {
+                                super.beforeRequest(headers);
+//                                headers.put("Authorization", Collections.singletonList("Basic " + base64Creds));
+                            }
+                        }).build(),*/ClientEndpointConfig.Builder.create().build(),
+                endpointURI);
+    }
+
     public static WebSocketTestClientEndpoint wsClientFactory(String uri) throws URISyntaxException, IOException, DeploymentException {
         return new WebSocketTestClientEndpoint(new URI(uri));
     }
 
+    public static WebSocketTestClientEndpoint wsClientFactory(String uri, String username, String password)
+            throws URISyntaxException, IOException, DeploymentException {
+        return new WebSocketTestClientEndpoint(new URI(uri), username + ":" + password);
+    }
+
     public ArrayList<ByteBuffer> getMessages() {
         return Assertions.assertTimeoutPreemptively(
-                Duration.ofSeconds(5),
+                Duration.ofSeconds(3),
                 () -> {
                     if (DEBUG) {
                         System.out.println("TRAP: waiting for message ...");
@@ -50,9 +74,10 @@ public class WebSocketTestClientEndpoint {
     }
 
     @OnOpen
-    public void onOpen(Session userSession) {
+    public void onOpen(Session userSession, EndpointConfig config) {
         //save session
         this.session = userSession;
+//        messageTrapBuffer = new ArrayList<>();
         if (DEBUG) {
             System.out.println("opening websocket "
                     + Integer.toHexString(System.identityHashCode(this)));
@@ -67,32 +92,32 @@ public class WebSocketTestClientEndpoint {
         }
     }
 
+    private final Object messageQueueLock = new Object();
+
     @OnMessage
     public synchronized void onMessage(ByteBuffer byteBuffer) {
         //log this message
         if (DEBUG) {
             //binary message from the server is CVMO packet
-            System.out.printf("%s: %s%n", Integer.toHexString(System.identityHashCode(this)), Hex.encodeHexString(byteBuffer.array()));
+            System.out.printf("[WS %s] onMessage received: %s%n", Integer.toHexString(System.identityHashCode(this)), Hex.encodeHexString(byteBuffer.array()));
         }
-
-        //check trap
-        if (messageTrap > 0) {
-            //decrement trap counter
-            messageTrap--;
-            //allocate new array
-            if (messageTrapBuffer == null) {
-                messageTrapBuffer = new ArrayList<>();
-            }
-            //set trap data
-            messageTrapBuffer.add(byteBuffer);
-            //notify if last
-            if (messageTrap <= 0) {
-                notifyAll();
-            }
-        } else {
-            throw new IllegalStateException(String.format("WHOOSH! A message just flew by without being processed:\n%s: %s",
-                    Integer.toHexString(System.identityHashCode(this)), Hex.encodeHexString(byteBuffer.array())));
-        }
+//        synchronized (messageQueueLock) {
+            //check trap
+//            if (messageTrap > 0) {
+                System.out.printf("... now %d items in queue%n", messageTrapBuffer.size());
+                //decrement trap counter
+//                messageTrap--;
+                //set trap data
+                messageTrapBuffer.add(byteBuffer);
+                //notify if last
+//                if (messageTrap <= 0) {
+//                    notifyAll();
+//                }
+//            } else {
+//                throw new IllegalStateException(String.format("WHOOSH! A message just flew by without being processed:\n%s: %s",
+//                        Integer.toHexString(System.identityHashCode(this)), Hex.encodeHexString(byteBuffer.array())));
+//            }
+//        }
     }
 
     public void close() throws IOException {
@@ -100,6 +125,11 @@ public class WebSocketTestClientEndpoint {
     }
 
     public void sendBinary(ByteBuffer byteBuffer) throws IOException {
+        if (DEBUG) {
+            System.out.printf("sending via WS %s: %s%n",
+                    Integer.toHexString(System.identityHashCode(this)),
+                    Hex.encodeHexString(byteBuffer.array()));
+        }
         session.getBasicRemote().sendBinary(byteBuffer);
     }
 
@@ -115,23 +145,19 @@ public class WebSocketTestClientEndpoint {
         setMessageTrap(1);
     }
 
-    public ByteBuffer getMessageTrap() {
-        return getMessageTraps().get(0);
-    }
-
-    public synchronized void setMessageTrap(int numberOfTraps) {
+    public void setMessageTrap(int numberOfTraps) {
         messageTrap = numberOfTraps;
-        messageTrapBuffer = null;
     }
 
-    public synchronized ArrayList<ByteBuffer> getMessageTraps() {
-        while (messageTrap > 0) {
-            try {
-                wait();
-            } catch (InterruptedException e) {
-                throw new UnsupportedOperationException("Interrupted in getMessageTrap", e);
+    public ArrayList<ByteBuffer> getMessageTraps() throws InterruptedException {
+        int count = messageTrap;
+        ArrayList<ByteBuffer> out = new ArrayList<>(count);
+        synchronized (messageQueueLock) {
+            while (count-- > 0) {
+                System.out.printf("fetching one message, %d remain%n", count);
+                out.add(messageTrapBuffer.take());
             }
         }
-        return messageTrapBuffer;
+        return out;
     }
 }
